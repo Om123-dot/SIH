@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stress Awareness Quiz</title>
+<style>
+html, body {
+    height: 100%;
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #c0e0de, #f5f7fa);
+}
+.back-arrow {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    font-size: 22px;
+    font-weight: bold;
+    color: #3a9bdc;
+    cursor: pointer;
+    transition: color 0.3s;
+    z-index: 100;
+}
+.back-arrow:hover {
+    color: #2573a6;
+}
+
+.quiz-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    width: 100%;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.quiz-card {
+    background: #fff;
+    padding: 25px 20px;
+    border-radius: 20px;
+    box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+    width: 80%;
+    max-width: 600px;
+    min-height: 500px;  /* reduced height */
+    text-align: center;
+    transition: transform 0.3s;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
+
+
+
+.quiz-card:hover { transform: translateY(-3px); }
+
+img {
+    width: 220px;       /* increased from 180px */
+    height: 220px;      /* increased proportionally */
+    object-fit: contain;
+    margin: 0 auto 25px auto; /* center horizontally */
+    border-radius: 20px;
+    display: block;      /* ensure it's centered */
+}
+
+
+h2 { margin-bottom: 25px; font-weight: 500; color: #333; }
+
+.options {
+    list-style: none;
+    padding: 0;
+    margin-bottom: 20px;
+}
+
+.options li {
+    background: #f1f8fa;
+    margin: 12px 0;
+    padding: 15px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.options li:hover { background: #d1edf4; transform: translateY(-2px); }
+.options li.selected {
+    background: #5bc0de;
+    color: white;
+    font-weight: bold;
+    transform: scale(1.05);
+}
+
+.progress-bar { display: flex; margin-bottom: 25px; }
+.progress-step {
+    flex: 1;
+    height: 10px;
+    margin: 0 4px;
+    background: #ddd;
+    border-radius: 5px;
+    transition: all 0.3s;
+}
+.progress-step.active { background: linear-gradient(90deg, #5bc0de, #3a9bdc); }
+
+button {
+    padding: 12px 25px;
+    border: none;
+    background: #3a9bdc;
+    color: #fff;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background 0.3s, transform 0.2s;
+}
+button:hover { background: #2573a6; transform: translateY(-2px); }
+
+.result { margin-top: 25px; font-size: 22px; font-weight: bold; color: #3a9bdc; }
+.tips { margin-top: 15px; font-size: 16px; color: #555; text-align: left; }
+.encouragement { margin-top: 10px; font-size: 18px; color: #2d7a9a; font-weight: 500; }
+
+@media(max-width:800px){
+    .quiz-card { width: 95%; min-height: 500px; padding: 25px 20px; } /* keep smaller height */
+}
+
+</style>
+
+</head>
+<body>
+<div class="back-arrow" onclick="leaveQuiz()">
+    &#8592; Back
+</div>
+
+<div class="quiz-container">
+    <div class="quiz-card">
+        <div class="progress-bar" id="progress-bar"></div>
+        <img id="question-img" src="" alt="Question Image">
+        <h2 id="question-text"></h2>
+        <ul class="options" id="options-list"></ul>
+        <button id="next-btn">Next</button>
+        <div class="result" id="result"></div>
+        <div class="encouragement" id="encouragement"></div>
+        <div class="tips" id="tips"></div>
+        <button id="retake-btn" style="display:none; margin-top:15px;">Retake Quiz</button>
+    </div>
+</div>
+
+<script>
+const quizData = [
+    {img:"/pqimages/img1.png", question:"How often do you feel your mind is too full of thoughts?", options:[" Rarely"," Sometimes"," Almost always"]},
+    {img:"/pqimages/img2.png", question:"When you get free time, what do you usually feel like doing?", options:[" Something fun or creative"," Just scrolling or distracting myself"," Nothing, I feel drained"]},
+    {img:"/pqimages/img3.png", question:"How well are you sleeping these days?", options:[" Sleeping well, wake up refreshed"," Sleep is okay, but not always enough"," Trouble sleeping or waking tired"]},
+    {img:"/pqimages/img4.png", question:"When small problems happen, how do you usually react?", options:[" Stay calm, figure it out"," Get annoyed, but manage"," Feel overwhelmed quickly"]},
+    {img:"/pqimages/img5.png", question:"How do you feel about doing tasks (studies/work) lately?", options:[" Motivated or okay"," Hard to focus sometimes"," Very difficult, no energy"]},
+    {img:"/pqimages/img6.png", question:"How often do you enjoy your hobbies or fun activities?", options:[" Often, they make me feel good"," Sometimes, depends on mood"," Rarely, no interest"]},
+    {img:"/pqimages/img7.png", question:"When you think about the future, how do you feel?", options:[" Hopeful and positive"," Uncertain, a bit worried"," Very worried or hopeless"]},
+    {img:"/pqimages/img8.png", question:"How often do you feel physically tense (headache, stomach ache, tiredness)?", options:[" Rarely"," Sometimes"," Often"]},
+];
+
+const tipsData = {
+    "Low Stress ": [
+        "Keep up your healthy habits!",
+        "Try mindfulness or meditation occasionally.",
+        "Maintain a balanced routine with breaks."
+    ],
+    "Medium Stress ": [
+        "Take short breaks during study/work.",
+        "Practice deep breathing or light exercise.",
+        "Talk to friends or family when feeling stressed."
+    ],
+    "High Stress ": [
+        "Consider talking to a counselor or mental health professional.",
+        "Try daily relaxation exercises like meditation or yoga.",
+        "Avoid overloading yourself and focus on small, manageable tasks."
+    ]
+};
+
+const encouragementData = {
+    "Low Stress ": "Great job! Keep taking care of yourself ",
+    "Medium Stress ": "You’re doing okay! Remember to take small breaks ",
+    "High Stress ": "It’s okay to ask for help. You’re not alone "
+};
+
+let currentQuestion = 0;
+let score = 0;
+let selectedOption = null;
+let answers = [];
+
+const questionImg = document.getElementById("question-img");
+const questionText = document.getElementById("question-text");
+const optionsList = document.getElementById("options-list");
+const nextBtn = document.getElementById("next-btn");
+const resultDiv = document.getElementById("result");
+const progressBar = document.getElementById("progress-bar");
+const tipsDiv = document.getElementById("tips");
+const encouragementDiv = document.getElementById("encouragement");
+const retakeBtn = document.getElementById("retake-btn");
+
+function loadProgressBar() {
+    progressBar.innerHTML = "";
+    for(let i=0; i<quizData.length; i++){
+        const div = document.createElement("div");
+        div.classList.add("progress-step");
+        if(i <= currentQuestion) div.classList.add("active");
+        progressBar.appendChild(div);
+    }
+}
+
+function loadQuestion() {
+    selectedOption = null;
+    loadProgressBar();
+    const q = quizData[currentQuestion];
+    questionImg.src = q.img;
+    questionText.textContent = q.question;
+    optionsList.innerHTML = "";
+    tipsDiv.innerHTML = "";
+    encouragementDiv.innerHTML = "";
+    q.options.forEach((option, index) => {
+        const li = document.createElement("li");
+        li.textContent = option;
+        li.addEventListener("click", () => {
+            selectedOption = index + 1;
+            Array.from(optionsList.children).forEach(child => child.classList.remove("selected"));
+            li.classList.add("selected");
+        });
+        optionsList.appendChild(li);
+    });
+    nextBtn.textContent = currentQuestion === quizData.length - 1 ? "Submit" : "Next";
+}
+
+nextBtn.addEventListener("click", () => {
+    if(selectedOption === null){
+        alert("Please select an option to proceed!");
+        return;
+    }
+    score += selectedOption;
+    answers.push(selectedOption);
+    if(currentQuestion < quizData.length - 1){
+        currentQuestion++;
+        loadQuestion();
+    } else {
+        showResult();
+    }
+});
+
+function showResult(){
+    questionImg.style.display = "none";
+    questionText.style.display = "none";
+    optionsList.style.display = "none";
+    nextBtn.style.display = "none";
+    progressBar.style.display = "none";
+
+    let level = "";
+    if(score <= 10) level = "Low Stress ";
+    else if(score <= 18) level = "Medium Stress ";
+    else level = "High Stress ";
+
+    resultDiv.textContent = `Your stress level: ${level}`;
+    encouragementDiv.textContent = encouragementData[level];
+
+    // Personalized follow-up based on answers (example)
+    let followUp = [];
+    if(answers[2] === 3) followUp.push("Your sleep seems poor; try improving sleep hygiene.");
+    if(answers[7] === 3) followUp.push("You feel physically tense often; try light exercises or stretching.");
+    if(followUp.length > 0) tipsDiv.innerHTML = "<b>Suggestions based on your responses:</b><ul>" + followUp.map(t => `<li>${t}</li>`).join('') + "</ul>";
+    else tipsDiv.innerHTML = "<b>Tips to manage stress:</b><ul>" + tipsData[level].map(t => `<li>${t}</li>`).join('') + "</ul>";
+
+    retakeBtn.style.display = "inline-block";
+}
+
+// Retake Quiz
+retakeBtn.addEventListener("click", () => {
+    currentQuestion = 0;
+    score = 0;
+    answers = [];
+    selectedOption = null;
+    questionImg.style.display = "";
+    questionText.style.display = "";
+    optionsList.style.display = "";
+    nextBtn.style.display = "inline-block";
+    progressBar.style.display = "flex";
+    retakeBtn.style.display = "none";
+    resultDiv.textContent = "";
+    tipsDiv.textContent = "";
+    encouragementDiv.textContent = "";
+    loadQuestion();
+});
+function leaveQuiz() {
+    const confirmLeave = confirm("Are you sure you want to leave the quiz? Your progress will be lost.");
+    if(confirmLeave){
+        window.location.href = "index.html"; // or any page you want to go back to
+    }
+}
+
+// Initialize
+loadQuestion();
+</script>
+
+</body>
+</html>
