@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PHQ-9 Split Screen</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body, html { height: 100%; font-family: 'Segoe UI', sans-serif; background: #f4f6f8; color: #111; }
+
+  .container { display: flex; width: 100%; height: 100vh; }
+  .left-panel, .right-panel {
+    width: 50%; height: 100%;
+    padding: 20px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .left-panel { background: #FFEAEA; box-shadow: 2px 0 12px rgba(0,0,0,0.1); text-align: center; }
+  .story-text { font-size: 20px; line-height: 1.5; margin-bottom: 20px; }
+  .story-image { width: 500px; height: 400px; object-fit: cover; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 15px; }
+
+  .right-panel { background: #F5CBCB; text-align: left; }
+  .progress-bar { width: 80%; height: 12px; background: #d1d5db; border-radius: 8px; margin-bottom: 20px; overflow: hidden; }
+  .progress-fill { height: 100%; width: 0%; background: #6f42c1; transition: width 0.5s ease; }
+
+  .question-box { background: #ffffff; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 80%; }
+  .options { width: 80%; background: #ffffff; padding: 15px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 20px; }
+  .option-item { display: flex; align-items: center; margin: 10px 0; font-size: 16px; cursor: pointer; padding: 10px; border-radius: 8px; transition: transform 0.2s ease, background 0.2s ease; }
+  .option-item input { margin-right: 12px; width: 20px; height: 20px; cursor: pointer; }
+
+  .option-item:hover { transform: scale(1.05); background: #fdf2f8; }
+  .option-item input:checked + span {
+    font-weight: bold; display: inline-block; transform: scale(1.15);
+    background: #e9d5ff; color: #4b0082; padding: 8px 12px; border-radius: 8px;
+  }
+
+  .nav-buttons { display: flex; justify-content: space-between; width: 80%; max-width: 400px; }
+  .nav-buttons button { padding: 12px 20px; font-size: 16px; border: none; border-radius: 8px; cursor: pointer; transition: 0.3s; background: #6f42c1; color: white; }
+  .nav-buttons button:hover { background: #a78bfa; }
+
+  .result { font-size: 22px; background: #ffffff; padding: 25px; border-radius: 12px; max-width: 80%; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+  .recommendation { text-align: left; margin-top: 15px; line-height: 1.5; }
+
+  #assessmentTitle { font-size: 22px; font-weight: bold; text-align: center; margin-bottom: 15px; color: #333; }
+  #backBtn { position: absolute; top: 15px; left: 20px; background: #6f42c1; color: white; text-decoration: none; padding: 8px 14px; border-radius: 6px; font-size: 16px; font-weight: 500; box-shadow: 0 2px 6px rgba(0,0,0,0.2); transition: background 0.3s; }
+  #backBtn:hover { background: #a78bfa; }
+
+  @media(max-width: 768px){
+    .container { flex-direction: column; }
+    .left-panel, .right-panel { width: 100%; height: auto; }
+    .story-image { width: 100%; height: auto; }
+  }
+  .option-item input:checked + span {
+  font-weight: bold;
+  display: inline-block;
+  transform: scale(1.15);
+  /* remove background & purple text */
+  background: none;
+  color: inherit;
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+</style>
+</head>
+<body>
+<a href="index.html" id="backBtn">⬅ Back</a>
+<div class="container">
+  <div class="left-panel">
+    <div id="storyText" class="story-text"></div>
+    <img id="storyImage" class="story-image" src="" alt="Story Image">
+    <audio id="questionAudio" controls></audio>
+  </div>
+
+  <div class="right-panel">
+    <h2 id="assessmentTitle">PHQ-9 Assessment</h2>
+    <div class="progress-bar"><div class="progress-fill"></div></div>
+    <div id="questionBox" class="question-box"></div>
+    <div class="options" id="optionsBox"></div>
+    <div class="nav-buttons">
+      <button id="prevBtn">⬅ Previous</button>
+      <button id="nextBtn">Next ➡</button>
+    </div>
+    <div id="resultBox" class="result" style="display:none;"></div>
+  </div>
+</div>
+
+<script>
+const questions = [
+  { story: "You wake on a free Saturday with a list of things you used to love — painting, music, and meeting friends. You sit down with your paints, but the colors look flat and your hands hesitate. You try switching on your favorite playlist, but even the songs feel distant, like they belong to someone else. After a while you close the sketchbook and scroll your phone instead, feeling puzzled that nothing seems enjoyable anymore", question: "Little interest or pleasure in doing things?", image: "phqimages/image1.png", audio: "phq_audio/vd11.mp3" },
+  { story: "For weeks you’ve had a slow, heavy feeling that follows you around. You find yourself sitting on the edge of the bed, staring at your phone, wanting to do something but feeling too small to start. Plans that used to brighten your day now feel pointless, and it’s hard to imagine things getting better. You tell yourself to “snap out of it,” but the cloud inside keeps returning each morning", question: "Feeling down, depressed, or hopeless?", image: "phqimages/image2.png", audio: "phq_audio/vd2.mp3" },
+  { story: "Night after night your mind races — to things you said, things you must do tomorrow, a list that never ends. You watch the clock creep toward 3 a.m. while your thoughts scatter and sleep refuses to come. Other days you oversleep until late afternoon, and despite so many hours in bed you wake fuzzy and drained, as if rest never reaches you. The cycle leaves you exhausted and worried about the next sleepless night.", question:"Trouble falling or staying asleep, or sleeping too much?", question: "Trouble falling or staying asleep, or sleeping too much?", image: "phqimages/image3.png", audio: "phq_audio/vd3.mp3" },
+  { story: "Small tasks feel huge: getting up, showering, answering a single message. You notice yourself pausing halfway down the stairs to catch a breath you don’t need physically, but your energy is gone. By midday you lose interest in finishing assignments or joining friends; even short conversations feel like heavy lifting. You spend more time lying down between tasks, hoping energy will come back if you wait.", question:"Feeling tired or having little energy?", question: "Feeling tired or having little energy?", image: "phqimages/image4.png", audio: "phq_audio/vd4.mp3" },
+  { story: "Some days you forget to eat because nothing tastes good; you tell yourself you’ll eat later, and later never comes. On other days you find yourself in front of the fridge, eating comfort food quickly and then feeling guilty afterward. Mealtimes, once a moment to relax or connect, now feel unpredictable and charged with emotion. You notice your weight shifting and it adds to the small, nagging worries you carry.", question: "Poor appetite or overeating?", image: "phqimages/image5.png", audio: "phq_audio/vd5.mp3" },
+  { story: "When something goes wrong — a missed deadline or an awkward conversation — you replay it endlessly and magnify the mistake inside your head. Compliments from others bounce off you; you can’t believe them because the inner voice is louder, calling you lazy or useless. Even small setbacks become proof in your mind that you don’t measure up. You try to explain it away, but the shame sits heavy, making it hard to move on.", question: "Feeling bad about yourself, or that you are a failure or have let yourself or your family down?", image: "phqimages/image6.png", audio: "phq_audio/vd6.mp3" },
+  { story: "You open a textbook and the same paragraph looks foreign each time you read it. In lectures or meetings your attention slips away and you realize you’ve missed whole sections. Tasks take longer because you must re-focus repeatedly, and that frustration makes you avoid work that once felt manageable. You worry this fog will affect your grades or job performance, which makes it even harder to start", question: "Trouble concentrating on things, such as reading the newspaper or watching television?", image: "phqimages/image7.png", audio: "phq_audio/vd7.mp3" },
+  { story: "Some mornings you feel like you’re wading through syrup: every movement slow, your voice flat and sluggish. Other times your hands won’t sit still and you pace the room, unable to settle, tapping or bouncing your leg until you feel keyed up and exhausted. The mismatch between your mind and body is upsetting — either way, daily activities feel awkward and out of sync with how you used to be.", question: "Moving or speaking slowly, or being fidgety/restless?", image: "phqimages/image8.png", audio: "phq_audio/vd88.mp3" },
+  { story: "When the heaviness becomes too much, dark thoughts can appear — fleeting at first, then more insistent. You may find yourself thinking that others would be better off without the trouble you feel you cause, or imagining not having to handle the pain anymore. These thoughts are serious and can feel frightening; they do not mean you are weak — they mean you’re hurting and need support. If you ever feel like you might act on these thoughts, please reach out immediately to a trusted person, a local emergency service, or a crisis helpline", question: "Thoughts that you would be better off dead, or of hurting yourself in some way?", image: "phqimages/image9.png", audio: "phq_audio/vd8.mp3" }
+];
+
+const options = [
+  {text: "Not at all", score: 0},
+  {text: "Several days", score: 1},
+  {text: "More than half the days", score: 2},
+  {text: "Nearly every day", score: 3}
+];
+
+let current = 0;
+let answers = Array(questions.length).fill(null);
+
+const storyText = document.getElementById("storyText");
+const storyImage = document.getElementById("storyImage");
+const qBox = document.getElementById("questionBox");
+const oBox = document.getElementById("optionsBox");
+const fill = document.querySelector(".progress-fill");
+const resultBox = document.getElementById("resultBox");
+const audioPlayer = document.getElementById("questionAudio");
+
+function loadQuestion() {
+  if (current < questions.length) {
+    storyText.textContent = questions[current].story;
+    storyImage.src = questions[current].image;
+    qBox.textContent = "Question " + (current + 1) + ": " + questions[current].question;
+
+    // Load audio safely
+    if (questions[current].audio) {
+      audioPlayer.src = questions[current].audio;
+      audioPlayer.load();
+      audioPlayer.play().catch(err => {
+        console.warn("Autoplay blocked. User must press play.", err);
+      });
+    }
+
+    // Options
+    oBox.innerHTML = "";
+    options.forEach((opt, i) => {
+      const label = document.createElement("label");
+      label.className = "option-item";
+      const radio = document.createElement("input");
+      radio.type = "radio";
+      radio.name = "question" + current;
+      radio.checked = answers[current] === i;
+      radio.addEventListener("change", () => { answers[current] = i; });
+      const span = document.createElement("span");
+      span.textContent = opt.text;
+      label.appendChild(radio);
+      label.appendChild(span);
+      oBox.appendChild(label);
+    });
+
+    // Progress
+    fill.style.width = ((current + 1) / questions.length) * 100 + "%";
+    qBox.style.display = "block";
+    oBox.style.display = "block";
+    document.querySelector(".nav-buttons").style.display = "flex";
+    resultBox.style.display = "none";
+  } else {
+    audioPlayer.pause();
+    showResult();
+  }
+}
+
+function showResult() {
+  qBox.style.display="none"; oBox.style.display="none";
+  document.querySelector(".nav-buttons").style.display="none";
+  audioPlayer.pause();
+
+  let total = answers.reduce((sum, ans) => sum + (ans!==null ? options[ans].score : 0),0);
+  let condition="", recommendations="";
+
+  if(total<=4){
+    condition="Minimal or no depression. Keep maintaining healthy habits!";
+    recommendations="- Exercise and sleep routines\n- Stay socially connected\n- Engage in hobbies";
+  } else if(total<=9){
+    condition="Mild depression. Try relaxation or talking to friends.";
+    recommendations="- Mindfulness or meditation\n- Set small daily goals\n- Consider counselor/support group";
+  } else if(total<=14){
+    condition="Moderate depression. Consider counseling or self-care routines.";
+    recommendations="- Regular counseling\n- Balanced diet/sleep\n- Track moods/triggers";
+  } else if(total<=19){
+    condition="Moderately severe depression. Talk with a mental health professional.";
+    recommendations="- Seek therapy promptly\n- Involve supportive friends/family\n- Maintain routines";
+  } else{
+    condition="Severe depression. Seek professional help immediately.";
+    recommendations="- Contact mental health professional\n- Use helplines/support services\n- Avoid isolation";
+  }
+
+  resultBox.innerHTML=`<h2>Your PHQ-9 Score: ${total}/27</h2>
+    <p>${condition}</p>
+    <div class="recommendation"><strong>Recommendations:</strong><br>${recommendations.replace(/\n/g,"<br>")}</div>`;
+  resultBox.style.display="block";
+}
+
+document.getElementById("nextBtn").addEventListener("click",()=>{
+  if(current < questions.length-1){ current++; loadQuestion(); }
+  else{ showResult(); }
+});
+document.getElementById("prevBtn").addEventListener("click",()=>{
+  if(current>0){ current--; loadQuestion(); }
+});
+
+loadQuestion();
+</script>
+</body>
+</html>
